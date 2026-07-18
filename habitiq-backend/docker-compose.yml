@@ -1,0 +1,290 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: habitiq-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-habitiq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-habitiq_secret}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U habitiq"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: habitiq-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: habitiq-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: habitiq-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  zipkin:
+    image: openzipkin/zipkin:3
+    container_name: habitiq-zipkin
+    ports:
+      - "9411:9411"
+
+  config-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: config-server
+    container_name: habitiq-config-server
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+      EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/actuator/health || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 12
+    restart: on-failure
+
+  discovery-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: discovery-server
+    container_name: habitiq-discovery
+    ports:
+      - "8761:8761"
+    depends_on:
+      config-server:
+        condition: service_healthy
+    restart: on-failure
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CLOUD_CONFIG_ENABLED: false
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: api-gateway
+    container_name: habitiq-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - config-server
+      - discovery-server
+    restart: on-failure
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "configserver:http://config-server:8888?optional=true"
+      EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: user-service
+    container_name: habitiq-user-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - config-server
+      - discovery-server
+    restart: on-failure
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "configserver:http://config-server:8888?optional=true"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/habitiq_users
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-habitiq}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-habitiq_secret}
+      EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+  file-processor-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: file-processor-service
+    container_name: habitiq-file-processor
+    ports:
+      - "8082:8082"
+    depends_on:
+      - config-server
+      - discovery-server
+    restart: on-failure
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "configserver:http://config-server:8888?optional=true"
+      EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+  ai-agent-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: ai-agent-service
+    container_name: habitiq-ai-agent
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres
+      - config-server
+      - discovery-server
+    restart: on-failure
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "configserver:http://config-server:8888?optional=true"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/habitiq_ai
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-habitiq}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-habitiq_secret}
+      EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+
+  routine-tracker-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: routine-tracker-service
+    container_name: habitiq-tracker
+    ports:
+      - "8084:8084"
+    depends_on:
+      - postgres
+      - redis
+      - config-server
+      - discovery-server
+    restart: on-failure
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "configserver:http://config-server:8888?optional=true"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/habitiq_tracker
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-habitiq}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-habitiq_secret}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: notification-service
+    container_name: habitiq-notification
+    ports:
+      - "8085:8085"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    restart: on-failure
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "configserver:http://config-server:8888?optional=true"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/habitiq_notifications
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-habitiq}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-habitiq_secret}
+      EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
+      TWILIO_VOICE_FROM: ${TWILIO_VOICE_FROM}
+      TWILIO_WEBHOOK_BASE_URL: ${TWILIO_WEBHOOK_BASE_URL}
+
+  progress-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: progress-service
+    container_name: habitiq-progress
+    ports:
+      - "8086:8086"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    restart: on-failure
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "configserver:http://config-server:8888?optional=true"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/habitiq_progress
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-habitiq}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-habitiq_secret}
+      EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+volumes:
+  postgres_data:
+  redis_data:

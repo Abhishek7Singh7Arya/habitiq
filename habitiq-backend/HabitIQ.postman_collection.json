@@ -1,0 +1,705 @@
+{
+	"info": {
+		"_postman_id": "7662c161-07eb-4cb6-880c-c6c79cf02cb8",
+		"name": "HabitIQ API Collection",
+		"description": "Comprehensive Postman collection for testing the HabitIQ backend microservices via the API Gateway.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication & Profile",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane.doe@example.com\",\n  \"phone\": \"+1234567890\",\n  \"password\": \"Password123!\",\n  \"age\": 28,\n  \"gender\": \"Female\",\n  \"weightKg\": 65.5,\n  \"heightCm\": 168.0,\n  \"fitnessGoal\": \"Lose weight and build endurance\",\n  \"activityLevel\": \"Moderate\",\n  \"healthConditions\": \"None\",\n  \"dietaryPreferences\": \"Vegetarian\",\n  \"budgetPreference\": \"Medium\",\n  \"gymAccess\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"    pm.environment.set(\"token\", jsonData.data.token);",
+									"    pm.environment.set(\"userId\", jsonData.data.userId || jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"jane.doe@example.com\",\n  \"password\": \"Password123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"age\": 29,\n  \"weightKg\": 64.0,\n  \"fitnessGoal\": \"Maintain weight and gain muscle strength\",\n  \"activityLevel\": \"High\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Routine Tracker",
+			"item": [
+				{
+					"name": "Get Active Routine",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/ai/routines/active",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"ai",
+								"routines",
+								"active"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tracker Sessions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/tracker/sessions",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tracker",
+								"sessions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Scheduled Tasks",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/tracker/tasks",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tracker",
+								"tasks"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Pause Session",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/tracker/sessions/{{sessionId}}/pause",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tracker",
+								"sessions",
+								"{{sessionId}}",
+								"pause"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Resume Session",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/tracker/sessions/{{sessionId}}/resume",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tracker",
+								"sessions",
+								"{{sessionId}}",
+								"resume"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "File Processing",
+			"item": [
+				{
+					"name": "Parse Plan File (PDF/Excel)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/files/parse",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"parse"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Export Routine",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/files/export/routine/{{routineId}}?format=pdf",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"export",
+								"routine",
+								"{{routineId}}"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "pdf"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "AI Coach",
+			"item": [
+				{
+					"name": "Chat with AI Coach",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"I feel exhausted today. Can we adjust my workout to something lighter?\",\n  \"conversationId\": \"\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/ai/chat",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"ai",
+								"chat"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Chat with File Context",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"extractedText\": \"Day 1: Upper Body Push (Bench press 3x10, Overhead press 3x12, Lateral raise 3x15). Day 2: Rest. Day 3: Lower Body (Squat 3x10, Lunge 3x12, Calf raise 3x15).\",\n  \"userContext\": \"Prefer shorter workouts, max 45 minutes\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/ai/chat/file",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"ai",
+								"chat",
+								"file"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Conversations History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/ai/conversations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"ai",
+								"conversations"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Goals & Progress",
+			"item": [
+				{
+					"name": "Create Goal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"goalType\": \"Steps Count\",\n  \"targetValue\": 10000.0,\n  \"unit\": \"steps\",\n  \"targetDate\": \"2026-12-31\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/progress/goals",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"progress",
+								"goals"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Goals List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress/goals",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"progress",
+								"goals"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Log Progress toward Goal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"value\": 10500.0,\n  \"unit\": \"steps\",\n  \"notes\": \"Completed morning walk plus evening jog\",\n  \"tasksCompletedToday\": 3,\n  \"tasksTotalToday\": 3\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/progress/goals/{{goalId}}/log",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"progress",
+								"goals",
+								"{{goalId}}",
+								"log"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Progress Summary Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/progress/summary",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"progress",
+								"summary"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "Get Notification History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "goalId",
+			"value": "replace-with-created-goal-id",
+			"type": "string"
+		},
+		{
+			"key": "sessionId",
+			"value": "replace-with-tracker-session-id",
+			"type": "string"
+		},
+		{
+			"key": "routineId",
+			"value": "replace-with-routine-id",
+			"type": "string"
+		}
+	]
+}

@@ -1,0 +1,103 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # User Service
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/auth/**, /api/users/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+
+        # File Processor Service
+        - id: file-processor-service
+          uri: lb://file-processor-service
+          predicates:
+            - Path=/api/files/**
+
+        # AI Agent Service
+        - id: ai-agent-service
+          uri: lb://ai-agent-service
+          predicates:
+            - Path=/api/ai/**
+
+        # Routine Tracker Service
+        - id: routine-tracker-service
+          uri: lb://routine-tracker-service
+          predicates:
+            - Path=/api/tracker/**
+
+        # Notification Service
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications/**
+
+        # Progress Service
+        - id: progress-service
+          uri: lb://progress-service
+          predicates:
+            - Path=/api/progress/**
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 10
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE:http://localhost:8761/eureka/}
+
+jwt:
+  secret: ${JWT_SECRET:habitiq-super-secret-key-change-in-production-min-256bits}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: User Service
+        url: /api/users/v3/api-docs
+      - name: AI Agent Service
+        url: /api/ai/v3/api-docs
+      - name: File Processor Service
+        url: /api/files/v3/api-docs
+      - name: Routine Tracker Service
+        url: /api/tracker/v3/api-docs
+      - name: Notification Service
+        url: /api/notifications/v3/api-docs
+      - name: Progress Service
+        url: /api/progress/v3/api-docs

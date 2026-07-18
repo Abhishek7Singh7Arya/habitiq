@@ -1,0 +1,67 @@
+global:
+  domain: habitiq.com
+  registry: docker.io/habitiq
+
+postgres:
+  image: postgres:16-alpine
+  host: postgres
+  port: 5432
+  dbUser: habitiq
+  dbPassword: habitiq_secret
+
+redis:
+  image: redis:7-alpine
+  host: redis
+  port: 6379
+
+kafka:
+  zookeeperImage: confluentinc/cp-zookeeper:7.6.1
+  kafkaImage: confluentinc/cp-kafka:7.6.1
+  bootstrapServers: kafka:9092
+
+services:
+  config-server:
+    port: 8888
+    replicas: 1
+    image: config-server
+    tag: latest
+  discovery-server:
+    port: 8761
+    replicas: 1
+    image: discovery-server
+    tag: latest
+  api-gateway:
+    port: 8080
+    replicas: 2
+    image: api-gateway
+    tag: latest
+  user-service:
+    port: 8081
+    replicas: 2
+    image: user-service
+    tag: latest
+  file-processor-service:
+    port: 8082
+    replicas: 2
+    image: file-processor-service
+    tag: latest
+  ai-agent-service:
+    port: 8083
+    replicas: 2
+    image: ai-agent-service
+    tag: latest
+  routine-tracker-service:
+    port: 8084
+    replicas: 2
+    image: routine-tracker-service
+    tag: latest
+  notification-service:
+    port: 8085
+    replicas: 2
+    image: notification-service
+    tag: latest
+  progress-service:
+    port: 8086
+    replicas: 2
+    image: progress-service
+    tag: latest

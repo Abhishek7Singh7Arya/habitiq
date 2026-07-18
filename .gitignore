@@ -1,0 +1,33 @@
+# Java/Maven
+**/target/
+**/*.jar
+**/*.war
+**/*.ear
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+**/env
+
+# Logs
+*.log
+logs/
+**/logs/
+
+# Mobile Node Modules
+**/node_modules/

@@ -1,0 +1,54 @@
+{{- range $serviceName, $serviceConfig := .Values.services }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $serviceName }}
+  labels:
+    app: {{ $serviceName }}
+spec:
+  replicas: {{ $serviceConfig.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $serviceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ $serviceName }}
+    spec:
+      containers:
+        - name: {{ $serviceName }}
+          image: "{{ $.Values.global.registry }}/{{ $serviceConfig.image }}:{{ $serviceConfig.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ $serviceConfig.port }}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "docker"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://{{ $.Values.postgres.host }}:{{ $.Values.postgres.port }}/habitiq_{{ replace \"-service\" \"\" $serviceName | replace \"-\" \"_\" }}"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "{{ $.Values.postgres.dbUser }}"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "{{ $.Values.postgres.dbPassword }}"
+            - name: SPRING_REDIS_HOST
+              value: "{{ $.Values.redis.host }}"
+            - name: SPRING_REDIS_PORT
+              value: "{{ $.Values.redis.port }}"
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "{{ $.Values.kafka.bootstrapServers }}"
+            - name: EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE
+              value: "http://discovery-server:8761/eureka/"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ $serviceConfig.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ $serviceConfig.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 20
+---
+{{- end }}

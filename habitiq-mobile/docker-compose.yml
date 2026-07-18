@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # Development service: Runs Expo Metro Bundler in interactive mode with hot-reloading
+  development:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8081:8081"
+    environment:
+      - NODE_ENV=development
+      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+      # Change REACT_NATIVE_PACKAGER_HOSTNAME to your local computer's IP address (e.g. 192.168.1.XX) 
+      # if you want to scan the QR code and connect via physical mobile devices running Expo Go on your LAN.
+      - REACT_NATIVE_PACKAGER_HOSTNAME=localhost
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.expo
+    # Kept open to ensure Expo Metro CLI interactive keyboard controls (r, w, a, etc.) can be received
+    stdin_open: true
+    tty: true
+
+  # Production Web service: Compiles static assets and serves them via a fast Nginx web server
+  production-web:
+    build:
+      context: .
+      target: production-web
+    ports:
+      - "8080:80"
+    environment:
+      - NODE_ENV=production

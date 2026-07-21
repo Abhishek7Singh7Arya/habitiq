@@ -51,7 +51,13 @@ public class ConversationService {
                 .build();
         conversation.getMessages().add(userMsg);
 
-        String aiResponse = agent.chat(userContext, userMessage, history);
+        String aiResponse;
+        try {
+            aiResponse = agent.chat(userContext, userMessage, history);
+        } catch (Exception e) {
+            log.error("AI Provider error for user {}: {}", userId, e.getMessage(), e);
+            throw HabitIQException.badRequest("AI Service error: " + e.getMessage() + ". Check GEMINI_API_KEY.");
+        }
 
         ConversationMessage aiMsg = ConversationMessage.builder()
                 .conversation(conversation)
@@ -100,7 +106,13 @@ public class ConversationService {
         Conversation conversation = Conversation.builder().userId(userId).build();
         conversation = conversationRepository.save(conversation);
 
-        String aiResponse = agent.generateFromFileContent(fileContent, userContext);
+        String aiResponse;
+        try {
+            aiResponse = agent.generateFromFileContent(fileContent, userContext);
+        } catch (Exception e) {
+            log.error("AI Provider error analyzing file for user {}: {}", userId, e.getMessage(), e);
+            throw HabitIQException.badRequest("AI Service error: " + e.getMessage() + ". Check GEMINI_API_KEY.");
+        }
 
         ConversationMessage aiMsg = ConversationMessage.builder()
                 .conversation(conversation)

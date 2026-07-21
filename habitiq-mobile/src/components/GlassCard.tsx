@@ -1,16 +1,18 @@
 import React from 'react';
-import { View, StyleSheet, useColorScheme, ViewProps } from 'react-native';
+import { View, StyleSheet, useColorScheme, ViewProps, TouchableOpacity } from 'react-native';
 import { Colors } from '../constants/theme';
 
 interface GlassCardProps extends ViewProps {
   children?: React.ReactNode;
+  onPress?: () => void;
+  activeOpacity?: number;
 }
 
-export const GlassCard: React.FC<GlassCardProps> = ({ children, style, ...props }) => {
+export const GlassCard: React.FC<GlassCardProps> = ({ children, style, onPress, activeOpacity = 0.7, ...props }) => {
   const colorScheme = useColorScheme() ?? 'dark';
   const colors = Colors[colorScheme];
 
-  return (
+  const cardContent = (
     <View
       style={[
         styles.card,
@@ -25,6 +27,16 @@ export const GlassCard: React.FC<GlassCardProps> = ({ children, style, ...props 
       {children}
     </View>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={activeOpacity}>
+        {cardContent}
+      </TouchableOpacity>
+    );
+  }
+
+  return cardContent;
 };
 
 const styles = StyleSheet.create({

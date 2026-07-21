@@ -60,6 +60,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         try {
             Claims claims = validateToken(token);
             ServerHttpRequest mutatedRequest = request.mutate()
+                    .headers(h -> {
+                        h.remove("X-User-Id");
+                        h.remove("X-User-Email");
+                        h.remove("X-User-Role");
+                    })
                     .header("X-User-Id", claims.getSubject())
                     .header("X-User-Email", claims.get("email", String.class))
                     .header("X-User-Role", claims.get("role", String.class))

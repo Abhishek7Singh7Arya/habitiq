@@ -54,20 +54,30 @@ public class RoutineGeneratorAgent {
         List<ChatMessage> messages = new ArrayList<>();
         
         messages.add(SystemMessage.from(SYSTEM_PROMPT));
-        messages.add(UserMessage.from("My profile: " + userContext));
+        messages.add(UserMessage.from("My profile: " + (userContext != null ? userContext : "Not provided")));
         messages.add(AiMessage.from("Thank you! I have your profile. I'll use this to create your personalized routine. Please tell me your specific goals or any constraints, or just say 'Generate my routine'."));
 
-        for (ChatHistoryEntry entry : history) {
-            if ("USER".equals(entry.role())) {
-                messages.add(UserMessage.from(entry.content()));
-            } else {
-                messages.add(AiMessage.from(entry.content()));
+        if (history != null) {
+            for (ChatHistoryEntry entry : history) {
+                if (entry != null && entry.content() != null && !entry.content().isBlank()) {
+                    if ("USER".equalsIgnoreCase(entry.role())) {
+                        messages.add(UserMessage.from(entry.content()));
+                    } else {
+                        messages.add(AiMessage.from(entry.content()));
+                    }
+                }
             }
         }
 
-        messages.add(UserMessage.from(userMessage));
+        String messageContent = (userMessage != null && !userMessage.isBlank()) 
+                ? userMessage 
+                : "Generate my personalized routine based on my profile.";
+        messages.add(UserMessage.from(messageContent));
 
         Response<AiMessage> response = chatModel.generate(messages);
+        if (response == null || response.content() == null) {
+            throw new RuntimeException("Empty response received from AI model provider");
+        }
         String content = response.content().text();
         log.debug("AI response: {}", content);
         return content;

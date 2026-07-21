@@ -21,7 +21,7 @@ public class AiConfig {
     @Value("${gemini.api-key:}")
     private String geminiApiKey;
 
-    @Value("${gemini.model:gemini-1.5-flash}")
+    @Value("${gemini.model:gemini-2.0-flash}")
     private String geminiModel;
 
     // OpenAI Properties
@@ -69,9 +69,14 @@ public class AiConfig {
                 if (geminiApiKey.isBlank()) {
                     log.warn("Gemini API key is missing! Set GEMINI_API_KEY environment variable.");
                 }
+                String model = geminiModel;
+                if (model == null || model.isBlank() || model.startsWith("gemini-1.5")) {
+                    model = "gemini-2.0-flash";
+                }
+                log.info("Using Gemini model: {}", model);
                 return GoogleAiGeminiChatModel.builder()
                         .apiKey(geminiApiKey)
-                        .modelName(geminiModel)
+                        .modelName(model)
                         .build();
         }
     }

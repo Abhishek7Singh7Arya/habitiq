@@ -27,16 +27,25 @@ export default function DocumentUploader() {
   const pickDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: [
-          'application/pdf',
-          'text/plain',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ],
+        type: '*/*',
         copyToCacheDirectory: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setSelectedFile(result.assets[0]);
+        const file = result.assets[0];
+        const extension = file.name.split('.').pop()?.toLowerCase();
+        
+        if (
+          extension !== 'pdf' && 
+          extension !== 'xlsx' && 
+          extension !== 'xls' && 
+          extension !== 'txt'
+        ) {
+          Alert.alert('Unsupported Format', 'Please upload a PDF, Excel (.xlsx/.xls), or Text (.txt) file.');
+          return;
+        }
+        
+        setSelectedFile(file);
       }
     } catch (err) {
       console.error('Error picking document', err);
